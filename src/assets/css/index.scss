@@ -1,0 +1,30 @@
+@import './variables.scss';
+@import './mixin.scss';
+@import './base.scss';
+
+html,
+body .app {
+  color: #333333;
+  font-family: Arial, Helvetica, 'STHeiti STXihei', 'Microsoft YaHei', Tohoma, sans-serif;
+  background-color: $background-color;
+}
+
+* {
+	-webkit-touch-callout: none; // 系统默认菜单被禁用
+	-webkit-user-select: none; // webkit浏览器
+	-moz-user-select: none; // 火狐
+	-ms-user-select: none; //IE10
+	user-select: none;
+}
+
+// 兼容ios输入框自动失去焦点无法输入内容
+.open-copy textarea {
+	-webkit-user-select: auto !important;
+  -moz-user-select: auto !important;
+	-ms-user-select: auto !important;
+  user-select: auto !important;
+}
+
+// .app-container {
+  // padding-bottom: 50px;
+// }
