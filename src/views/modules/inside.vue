@@ -1,45 +1,42 @@
-<!--打卡主页-->
 <template>
   <div :class="['inside', { 'inside-scroll': handleLastDayDaka(dayDakaModel) === true }]">
     <div class="top">
-    <!--
-      <div class="name">
-        <span class="tip">{{ tipMsg }}</span>
-      </div>
-    -->
       <div class="bg">
         <img :src="insideImg" alt="" />
       </div>
     </div>
+
     <div class="today" v-if="isShowSign">
       <div class="head" :style="{ 'text-align': 'left' }">
         <ClockComponent></ClockComponent>
       </div>
       <!-- dayDakaModel 打卡计划 -->
       <div class="title" :style="{ 'text-align': 'left' }" v-if="dayDakaModel">
-        <div class="left">雷沃重工</div>
 
+        <div class="left"></div>
         <div class="right" v-if='this.signType == 0'>
-          <img class="icon-son" src="../../assets/images/icon_sun.png" alt="" />
-          {{ dayDakaModel.comeMustTime }}&nbsp;——
-          <img class="icon-moon" src="../../assets/images/icon_moon.png" alt="" />
-          {{ dayDakaModel.leaveMustTime }}
+          <div style="padding-left: 30px">
+            <img class="icon-son" src="../../assets/images/icon_sun.png" alt="" />
+            {{ dayDakaModel.comeMustTime }}&nbsp;——
+            <img class="icon-moon" src="../../assets/images/icon_moon.png" alt="" />
+            {{ dayDakaModel.leaveMustTime }}
+          </div>
         </div>
         <div class="right" v-else>
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;自由打卡
         </div>
 
-        <div class="check-box">
-          <van-switch
-            v-model="switchValue"
-            class="check"
-            active-color="#8cd1fb"
-            inactive-color="#b0c8d9"
-            size="small"
-            @change="checkChange()"
-          />
-          <span class="check-label">&nbsp;&nbsp;外勤</span>
-        </div>
+<!--        <div class="check-box">-->
+<!--          <van-switch-->
+<!--            v-model="switchValue"-->
+<!--            class="check"-->
+<!--            active-color="#8cd1fb"-->
+<!--            inactive-color="#b0c8d9"-->
+<!--            size="small"-->
+<!--            @change="checkChange()"-->
+<!--          />-->
+<!--          <span class="check-label">&nbsp;&nbsp;外勤</span>-->
+<!--        </div>-->
       </div>
 
       <!-- 打卡记录-->
@@ -113,7 +110,10 @@ import isNeedSign from '@/mixins/isNeedSign'
 import { getToday, getTodayTime, getTodayFormat, getTodayTimeFormat, compareTime } from '@/utils/dateFormat.js'
 import ClockComponent from '@/components/ClockComponent.vue'
 import * as dd from 'dingtalk-jsapi'
+
+// 高德API库
 import AMapLoader from '@amap/amap-jsapi-loader'
+
 import { uuid } from '@/utils/uuid.js'
 import { gd_bd } from '@/utils/convert.js'
 import { closeDD } from '@/utils/dingding.js'
@@ -129,16 +129,17 @@ export default {
 
   data() {
     return {
-      maxHeight: '',
-      tipMsg: '',
-      isTimeInRange: false, // 能否打卡时间标志位 当前时间是否在打卡计划规定的时间范围内，默认是不在
-
+      map: null, //打卡范围对象的集合最终会被添加到这个map中，就是上面的polygonList会被添加
       AMap: null, // 高德封装并使用的容器对象
       polygonPath: [], // 多个坐标点组成的集合
       polygon: null, // 高德使用的打卡范围多边形对象，包含polygonPath属性，可以理解为是一个打卡范围对象
       polygonList: [], // 打卡范围对象的集合，如果有多个打卡范围会使用，但目前集合中只有第一个对象，就是考勤电子围栏
-      map: null, //打卡范围对象的集合最终会被添加到这个map中，就是上面的polygonList会被添加
+
       myPosition: '我的位置', // 显示的位置信息的文字，在获取位置信息时，会被修改成'正在获取定位。。。'
+
+      maxHeight: '',
+      tipMsg: '',
+      isTimeInRange: false, // 能否打卡时间标志位 当前时间是否在打卡计划规定的时间范围内，默认是不在
 
       routeLable: 'inside', // 打卡模式：inside 内勤打卡；outside 外勤打卡；默认是内勤打卡
       switchValue: false, // 内勤外勤标志位：true 外勤打卡；fasle 内勤打卡；是否是外勤打卡，控制外勤按钮的开关，默认是内勤打卡
@@ -232,8 +233,7 @@ export default {
 
   created() {
     // 计算打卡记录div的最大高度
-    const h = window.innerHeight
-    this.maxHeight = h - 46 - 50 - 265 - 50 - 100 - 20 + 'px'
+    this.maxHeight = window.innerHeight - 46 - 50 - 265 - 50 - 100 - 20 + 'px'
 
     setTimeout(() => {
       this.refresh() // 获取位置
@@ -287,7 +287,8 @@ export default {
       let flag = false
       if (this.routeLable && this.routeLable === 'inside') {
         flag = true
-        this.getRanges(this.AMap) // 获取电子围栏数据，并赋值给this.map
+        // 获取电子围栏数据，并赋值给this.map，这个参数此时为空
+        this.getRanges(this.AMap)
       } else if (this.routeLable && this.routeLable === 'outside') {
         flag = false
       }
@@ -326,7 +327,7 @@ export default {
         .then(AMap => {
           this.AMap = AMap
           this.map = new AMap.Map('container', {
-            center: [120.184615, 36.031294],
+            //center: [120.184615, 36.031294],
             zoom: 13
           })
           if (flag) {
@@ -350,11 +351,12 @@ export default {
       this.polygonPath = []
       this.polygon = null
       this.polygonList = []
+
       getSignRanges()
         .then(data => {
           const polygonData = data.polygonData
 
-          console.log('-->',data.polygonData)
+          console.log('结果：',data.polygonData)
 
           polygonData.forEach((array, arrIndex) => {
             array.forEach(item => {
@@ -375,8 +377,14 @@ export default {
             // this.polygonPath = []
             this.polygonList[arrIndex] = this.polygon
           })
+
           // 如果是多个，这里map.add([polygon, polygon1])
           this.map.add(this.polygonList) // map中添加了一个考勤电子围栏的集合，但是目前这个集合中只有第一个元素，就是上面查询得到的考勤电子围栏
+
+          console.log('1：'+this.polygonPath);
+          console.log('2：'+this.polygon);
+          console.log('3：'+this.polygonList);
+
         })
         .catch(err => {
           console.log(err)
@@ -385,6 +393,11 @@ export default {
 
     // 高德获取当前定位
     getMyLocation(AMap, map, flag) {
+
+      console.log('10:',AMap)
+      console.log('20:',map)
+      console.log('30:',flag)
+
       this.myPosition = '正在获取定位...'
       const _this = this
       const options = {
@@ -1363,7 +1376,7 @@ export default {
     position: relative;
     box-sizing: border-box;
     width: 96%;
-    //max-height: 250px;
+    //max-height: 80%;
     margin: -30px auto 0;
     background-color: #ffffff;
     border-radius: 10px;
