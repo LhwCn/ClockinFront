@@ -1387,7 +1387,7 @@ export default {
         .right {
           position: relative;
           flex: 4;
-          padding-left: 8px;
+          padding-left: 10px;
 
           .DakaTime {
             font-size: 14px;

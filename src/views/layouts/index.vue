@@ -26,11 +26,11 @@ export default {
     return {
       tabbars: [
         {
-          title: '考勤打卡',
+          title: '',
           to: {
             name: 'Inside'
           },
-          icon: 'location-o'
+          //icon: 'location-o'
         }
         // {
         //   title: '车牌管理',
